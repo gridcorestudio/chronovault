@@ -65,5 +65,8 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
 
+      - name: Sync program keys
+        run: anchor keys sync
+
       - name: Build Anchor program
         run: anchor build
