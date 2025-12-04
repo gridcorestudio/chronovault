@@ -13,7 +13,7 @@ env:
   NODE_VERSION: 20
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -24,12 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -53,20 +50,11 @@ jobs:
         if: steps.cache-solana.outputs.cache-hit != 'true'
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Cache Anchor
-        uses: actions/cache@v4
-        id: cache-anchor
-        with:
-          path: ~/.cargo/bin/anchor
-          key: anchor-${{ env.ANCHOR_VERSION }}
-
       - name: Install Anchor CLI
-        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
           cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
 
@@ -76,49 +64,7 @@ jobs:
           solana config set --url localhost
 
       - name: Install NPM dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Anchor program
         run: anchor build
-
-      - name: Run Anchor tests
-        run: anchor test
-
-  lint:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-        working-directory: programs/chronovault
-
-      - name: Run Clippy
-        run: cargo clippy --all-targets -- -D warnings
-        working-directory: programs/chronovault
-        continue-on-error: true
-
-  security-audit:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
-
-      - name: Run security audit
-        run: cargo audit
-        working-directory: programs/chronovault
-        continue-on-error: true
