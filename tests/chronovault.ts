@@ -417,6 +417,124 @@ describe("ChronoVault Protocol", () => {
         expect(error.message).to.include("AlreadyExecuted");
       }
     });
+
+    it("fails to execute before target slot (TooEarly)", async () => {
+      const earlyPaymentId = new BN(10);
+      const [configPda] = deriveConfigPda();
+      const [paymentPda] = derivePaymentPda(user.publicKey, earlyPaymentId);
+      const [escrowPda] = deriveEscrowPda(paymentPda);
+      const [keeperStatsPda] = deriveKeeperStatsPda(keeper.publicKey);
+
+      const currentSlot = await provider.connection.getSlot();
+      const executeAtSlot = new BN(currentSlot + 10000);
+
+      await program.methods
+        .createScheduledPayment(earlyPaymentId, new BN(10 * 1e6), executeAtSlot)
+        .accounts({
+          config: configPda,
+          payment: paymentPda,
+          escrow: escrowPda,
+          owner: user.publicKey,
+          recipient: recipient.publicKey,
+          mint: mint,
+          ownerTokenAccount: userTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+        })
+        .signers([user])
+        .rpc();
+
+      try {
+        await program.methods
+          .executePayment()
+          .accounts({
+            config: configPda,
+            payment: paymentPda,
+            escrow: escrowPda,
+            keeper: keeper.publicKey,
+            keeperStats: keeperStatsPda,
+            recipientTokenAccount: recipientTokenAccount,
+            keeperTokenAccount: keeperTokenAccount,
+            treasuryTokenAccount: treasuryTokenAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([keeper])
+          .rpc();
+        expect.fail("Should have failed with TooEarly");
+      } catch (error: any) {
+        expect(error.message).to.include("TooEarly");
+      }
+    });
+
+    it("fails when unregistered keeper tries to execute", async () => {
+      const unregisteredKeeper = Keypair.generate();
+      const airdropTx = await provider.connection.requestAirdrop(
+        unregisteredKeeper.publicKey,
+        2 * LAMPORTS_PER_SOL
+      );
+      await provider.connection.confirmTransaction(airdropTx);
+
+      const unregisteredKeeperTokenAccount = await createAccount(
+        provider.connection,
+        user,
+        mint,
+        unregisteredKeeper.publicKey
+      );
+
+      const unregPaymentId = new BN(11);
+      const [configPda] = deriveConfigPda();
+      const [paymentPda] = derivePaymentPda(user.publicKey, unregPaymentId);
+      const [escrowPda] = deriveEscrowPda(paymentPda);
+      const [unregKeeperStatsPda] = deriveKeeperStatsPda(unregisteredKeeper.publicKey);
+
+      const currentSlot = await provider.connection.getSlot();
+      const executeAtSlot = new BN(currentSlot + 2);
+
+      await program.methods
+        .createScheduledPayment(unregPaymentId, new BN(5 * 1e6), executeAtSlot)
+        .accounts({
+          config: configPda,
+          payment: paymentPda,
+          escrow: escrowPda,
+          owner: user.publicKey,
+          recipient: recipient.publicKey,
+          mint: mint,
+          ownerTokenAccount: userTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+        })
+        .signers([user])
+        .rpc();
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      try {
+        await program.methods
+          .executePayment()
+          .accounts({
+            config: configPda,
+            payment: paymentPda,
+            escrow: escrowPda,
+            keeper: unregisteredKeeper.publicKey,
+            keeperStats: unregKeeperStatsPda,
+            recipientTokenAccount: recipientTokenAccount,
+            keeperTokenAccount: unregisteredKeeperTokenAccount,
+            treasuryTokenAccount: treasuryTokenAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([unregisteredKeeper])
+          .rpc();
+        expect.fail("Should have failed - unregistered keeper stats account");
+      } catch (error: any) {
+        expect(error.toString()).to.satisfy((msg: string) => 
+          msg.includes("AccountNotInitialized") || 
+          msg.includes("has_one") ||
+          msg.includes("account does not exist")
+        );
+      }
+    });
   });
 
   describe("cancel_payment", () => {
@@ -568,6 +686,87 @@ describe("ChronoVault Protocol", () => {
         expect.fail("Should have failed with constraint");
       } catch (error: any) {
         expect(error.message).to.include("constraint");
+      }
+    });
+  });
+
+  describe("protocol_pause", () => {
+    it("blocks payment creation when protocol is paused", async () => {
+      const [configPda] = deriveConfigPda();
+
+      await program.methods
+        .updateConfig(60, 40, true)
+        .accounts({
+          config: configPda,
+          authority: provider.wallet.publicKey,
+        })
+        .rpc();
+
+      const config = await program.account.protocolConfig.fetch(configPda);
+      expect(config.paused).to.equal(true);
+
+      const pausedPaymentId = new BN(20);
+      const [paymentPda] = derivePaymentPda(user.publicKey, pausedPaymentId);
+      const [escrowPda] = deriveEscrowPda(paymentPda);
+
+      const currentSlot = await provider.connection.getSlot();
+      const executeAtSlot = new BN(currentSlot + 100);
+
+      try {
+        await program.methods
+          .createScheduledPayment(pausedPaymentId, new BN(1 * 1e6), executeAtSlot)
+          .accounts({
+            config: configPda,
+            payment: paymentPda,
+            escrow: escrowPda,
+            owner: user.publicKey,
+            recipient: recipient.publicKey,
+            mint: mint,
+            ownerTokenAccount: userTokenAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+            rent: SYSVAR_RENT_PUBKEY,
+          })
+          .signers([user])
+          .rpc();
+        expect.fail("Should have failed with ProtocolPaused");
+      } catch (error: any) {
+        expect(error.message).to.include("ProtocolPaused");
+      }
+
+      await program.methods
+        .updateConfig(60, 40, false)
+        .accounts({
+          config: configPda,
+          authority: provider.wallet.publicKey,
+        })
+        .rpc();
+    });
+  });
+
+  describe("cancel_executed_payment", () => {
+    it("fails to cancel an already executed payment", async () => {
+      const [configPda] = deriveConfigPda();
+      const [paymentPda] = derivePaymentPda(user.publicKey, new BN(2));
+      const [escrowPda] = deriveEscrowPda(paymentPda);
+
+      try {
+        await program.methods
+          .cancelPayment()
+          .accounts({
+            config: configPda,
+            payment: paymentPda,
+            escrow: escrowPda,
+            owner: user.publicKey,
+            ownerTokenAccount: userTokenAccount,
+            treasuryTokenAccount: treasuryTokenAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([user])
+          .rpc();
+        expect.fail("Should have failed with AlreadyExecuted");
+      } catch (error: any) {
+        expect(error.message).to.include("AlreadyExecuted");
       }
     });
   });

@@ -1,0 +1,126 @@
+name: ChronoVault Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CARGO_TERM_COLOR: always
+  SOLANA_VERSION: 2.0.3
+  ANCHOR_VERSION: 0.30.1
+  NODE_VERSION: 20
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache Solana
+        uses: actions/cache@v4
+        id: cache-solana
+        with:
+          path: ~/.local/share/solana
+          key: solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache Anchor
+        uses: actions/cache@v4
+        id: cache-anchor
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-${{ env.ANCHOR_VERSION }}
+
+      - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+
+      - name: Setup Solana keypair
+        run: |
+          solana-keygen new --no-bip39-passphrase --force
+          solana config set --url localhost
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build Anchor program
+        run: anchor build
+
+      - name: Run Anchor tests
+        run: anchor test
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+        working-directory: programs/chronovault
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets -- -D warnings
+        working-directory: programs/chronovault
+        continue-on-error: true
+
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
+        working-directory: programs/chronovault
+        continue-on-error: true

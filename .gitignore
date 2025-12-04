@@ -42,6 +42,7 @@ Cargo.lock
 test-ledger/
 .anchor/
 *.so
+target/deploy/*-keypair.json
 
 # TypeScript
 *.tsbuildinfo

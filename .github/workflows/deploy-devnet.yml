@@ -1,0 +1,93 @@
+name: Deploy to Devnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: 'Type "deploy" to confirm deployment'
+        required: true
+        type: string
+
+env:
+  SOLANA_VERSION: 2.0.3
+  ANCHOR_VERSION: 0.30.1
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.DEPLOY_WALLET_KEYPAIR }}" ]; then
+            echo "::error::Missing required secret: DEPLOY_WALLET_KEYPAIR"
+            echo "Please add DEPLOY_WALLET_KEYPAIR secret in repository settings."
+            echo "This should be the JSON content of your Solana wallet keypair."
+            exit 1
+          fi
+          echo "All required secrets are configured."
+
+  deploy:
+    needs: validate
+    if: github.event.inputs.confirm_deploy == 'deploy'
+    runs-on: ubuntu-latest
+    environment: devnet
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Cache Solana
+        uses: actions/cache@v4
+        id: cache-solana
+        with:
+          path: ~/.local/share/solana
+          key: solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Anchor CLI
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+
+      - name: Setup deploy wallet
+        run: |
+          mkdir -p ~/.config/solana
+          echo '${{ secrets.DEPLOY_WALLET_KEYPAIR }}' > ~/.config/solana/id.json
+          solana config set --url https://api.devnet.solana.com
+          solana config set --keypair ~/.config/solana/id.json
+
+      - name: Check wallet balance
+        run: |
+          BALANCE=$(solana balance | awk '{print $1}')
+          echo "Wallet balance: $BALANCE SOL"
+          if (( $(echo "$BALANCE < 2" | bc -l) )); then
+            echo "Warning: Low balance for deployment"
+          fi
+
+      - name: Build program
+        run: anchor build
+
+      - name: Deploy to Devnet
+        run: |
+          anchor deploy --provider.cluster devnet
+          echo "Deployment complete!"
+
+      - name: Verify deployment
+        run: |
+          PROGRAM_ID=$(solana address -k target/deploy/chronovault-keypair.json)
+          echo "Program deployed at: $PROGRAM_ID"
+          solana program show $PROGRAM_ID
