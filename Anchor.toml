@@ -1,12 +1,15 @@
+[toolchain]
+anchor_version = "0.30.1"
+
 [features]
 seeds = false
 skip-lint = false
 
 [programs.localnet]
-chronovault = "ChronoVau1txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+chronovault = "5fEPjDgueQqxc6cD1or3Pixt1fnY4EFRj6zQatU25tB5"
 
 [programs.devnet]
-chronovault = "ChronoVau1txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+chronovault = "5fEPjDgueQqxc6cD1or3Pixt1fnY4EFRj6zQatU25tB5"
 
 [registry]
 url = "https://api.apr.dev"
