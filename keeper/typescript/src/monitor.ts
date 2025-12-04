@@ -108,7 +108,7 @@ export class PaymentMonitor {
           const data = account.data;
           
           const discriminator = data.slice(0, 8);
-          const paymentDiscriminator = Buffer.from([85, 104, 118, 159, 68, 231, 146, 48]);
+          const paymentDiscriminator = Buffer.from([109, 136, 133, 45, 172, 50, 96, 152]);
           
           if (!discriminator.equals(paymentDiscriminator)) {
             continue;
