@@ -25,8 +25,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.77.0
+      - name: Install Rust 1.79.0
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.79.0
 
       - name: Install system dependencies
         run: |
@@ -40,8 +42,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-rust177-${{ hashFiles('**/Cargo.toml') }}-v3
+          key: ${{ runner.os }}-cargo-rust179-${{ hashFiles('**/Cargo.toml') }}-v1
 
       - name: Cache Solana
         uses: actions/cache@v4
@@ -58,11 +59,9 @@ jobs:
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Install Anchor CLI via cargo
+      - name: Install Anchor CLI
         run: |
-          if ! command -v anchor &> /dev/null || [[ "$(anchor --version)" != *"${{ env.ANCHOR_VERSION }}"* ]]; then
-            cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
-          fi
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
 
       - name: Verify installations
         run: |
@@ -83,9 +82,6 @@ jobs:
 
       - name: Install NPM dependencies
         run: npm install
-
-      - name: Clean Cargo.lock
-        run: rm -f Cargo.lock
 
       - name: Build Anchor program
         run: anchor build --skip-lint
