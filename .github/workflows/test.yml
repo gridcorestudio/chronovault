@@ -10,20 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: backpackapp/build:v0.30.1
+      image: projectserum/build:v0.30.1
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Remove incompatible Cargo.lock
-        run: rm -f Cargo.lock
-
-      - name: Setup Rust toolchain
-        shell: bash
-        run: |
-          source /root/.bashrc
-          rustup default stable
 
       - name: Verify installations
         run: |
