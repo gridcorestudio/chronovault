@@ -1,6 +1,6 @@
 import { PublicKey } from '@solana/web3.js';
 
-export const CHRONOVAULT_PROGRAM_ID = new PublicKey('ChronoVau1txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+export const CHRONOVAULT_PROGRAM_ID = new PublicKey('EzHNPN4VCbZZzBTk8S24vbzhtxFkMHEvSNmJCD8GqEcy');
 
 export const PROTOCOL_CONFIG_SEED = Buffer.from('protocol_config');
 export const PAYMENT_SEED = Buffer.from('payment');

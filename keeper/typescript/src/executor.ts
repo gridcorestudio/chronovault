@@ -33,7 +33,7 @@ interface PaymentWithPubkey {
   account: ScheduledPayment;
 }
 
-const CHRONOVAULT_PROGRAM_ID = new PublicKey('ChronoVau1txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+const CHRONOVAULT_PROGRAM_ID = new PublicKey('EzHNPN4VCbZZzBTk8S24vbzhtxFkMHEvSNmJCD8GqEcy');
 
 export class KeeperExecutor {
   private connection: Connection;

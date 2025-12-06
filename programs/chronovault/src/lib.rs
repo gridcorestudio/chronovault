@@ -6,7 +6,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("5fEPjDgueQqxc6cD1or3Pixt1fnY4EFRj6zQatU25tB5");
+declare_id!("EzHNPN4VCbZZzBTk8S24vbzhtxFkMHEvSNmJCD8GqEcy");
 
 #[program]
 pub mod chronovault {
