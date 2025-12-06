@@ -66,15 +66,14 @@ jobs:
         id: cache-anchor
         with:
           path: ~/.cargo/bin/anchor
-          key: anchor-${{ env.ANCHOR_VERSION }}-patched-v2
+          key: anchor-${{ env.ANCHOR_VERSION }}-binary-v3
 
-      - name: Install Anchor CLI (patched)
+      - name: Install Anchor CLI
         if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
-          git clone --depth 1 --branch v${{ env.ANCHOR_VERSION }} https://github.com/coral-xyz/anchor.git /tmp/anchor
-          cd /tmp/anchor
-          cargo update -p time --precise 0.3.36
-          cargo install --path cli --locked --force
+          mkdir -p ~/.cargo/bin
+          curl -sSfL "https://github.com/solana-foundation/anchor/releases/download/v${{ env.ANCHOR_VERSION }}/anchor-${{ env.ANCHOR_VERSION }}-x86_64-unknown-linux-gnu" -o ~/.cargo/bin/anchor
+          chmod +x ~/.cargo/bin/anchor
 
       - name: Verify installations
         run: |
@@ -82,8 +81,11 @@ jobs:
           solana --version
           anchor --version
 
-      - name: Remove Cargo.lock if version mismatch
-        run: rm -f Cargo.lock
+      - name: Remove Cargo.lock if version 4
+        run: |
+          if grep -q "version = 4" Cargo.lock 2>/dev/null; then
+            rm -f Cargo.lock
+          fi
 
       - name: Setup deploy wallet
         run: |
