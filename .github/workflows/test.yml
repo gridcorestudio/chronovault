@@ -6,64 +6,15 @@ on:
   pull_request:
     branches: [main, develop]
 
-env:
-  CARGO_TERM_COLOR: always
-  SOLANA_VERSION: 1.18.26
-  ANCHOR_VERSION: 0.30.1
-  NODE_VERSION: 20
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: backpackapp/build:v0.30.1
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.75.0
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev pkg-config
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            ~/.avm
-          key: ${{ runner.os }}-cargo-avm-${{ env.ANCHOR_VERSION }}-v1
-
-      - name: Cache Solana
-        uses: actions/cache@v4
-        id: cache-solana
-        with:
-          path: ~/.local/share/solana
-          key: solana-${{ env.SOLANA_VERSION }}
-
-      - name: Install Solana CLI
-        if: steps.cache-solana.outputs.cache-hit != 'true'
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
-
-      - name: Add Solana to PATH
-        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Install AVM and Anchor
-        run: |
-          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-          avm install ${{ env.ANCHOR_VERSION }}
-          avm use ${{ env.ANCHOR_VERSION }}
-          echo "$HOME/.avm/bin" >> $GITHUB_PATH
 
       - name: Verify installations
         run: |
