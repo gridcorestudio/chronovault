@@ -9,6 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SOLANA_VERSION: 2.0.3
+  ANCHOR_VERSION: 0.30.1
   NODE_VERSION: 20
 
 jobs:
@@ -53,9 +54,27 @@ jobs:
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
+      - name: Cache Anchor
+        uses: actions/cache@v4
+        id: cache-anchor
+        with:
+          path: ~/.local/bin/anchor
+          key: anchor-${{ env.ANCHOR_VERSION }}
+
       - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
         run: |
-          cargo install --git https://github.com/coral-xyz/anchor --tag v0.30.1 anchor-cli --locked --force
+          mkdir -p ~/.local/bin
+          curl -sSfL https://github.com/coral-xyz/anchor/releases/download/v${{ env.ANCHOR_VERSION }}/anchor-x86_64-unknown-linux-gnu -o ~/.local/bin/anchor
+          chmod +x ~/.local/bin/anchor
+
+      - name: Add Anchor to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify installations
+        run: |
+          solana --version
+          anchor --version
 
       - name: Setup Solana wallet keypair
         run: |
