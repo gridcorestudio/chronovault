@@ -36,6 +36,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Remove incompatible Cargo.lock
+        run: rm -f Cargo.lock
+
       - name: Setup Rust toolchain
         shell: bash
         run: |
