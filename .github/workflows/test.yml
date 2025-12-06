@@ -30,7 +30,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
           rustup toolchain install 1.82.0
-          rustup toolchain install 1.77.0
+          rustup toolchain install 1.75.0
           rustup default 1.82.0
 
       - name: Add Cargo to PATH
@@ -89,10 +89,11 @@ jobs:
       - name: Install NPM dependencies
         run: npm install
 
-      - name: Generate Cargo.lock v3 format
+      - name: Generate Cargo.lock v3 format with compatible deps
         run: |
           rm -f Cargo.lock
-          cargo +1.77.0 generate-lockfile
+          cargo +1.75.0 generate-lockfile
+          cargo +1.75.0 update borsh@1.6.0 --precise 1.5.1 || true
 
       - name: Build Anchor program
         run: anchor build --skip-lint
