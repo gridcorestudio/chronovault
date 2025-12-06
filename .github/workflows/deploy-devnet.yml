@@ -38,15 +38,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.79.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Cache Solana CLI
+        id: cache-solana
+        uses: actions/cache@v4
+        with:
+          path: ~/solana-release
+          key: solana-${{ runner.os }}-${{ env.SOLANA_VERSION }}
+
+      - name: Download Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          cd $HOME
+          wget -q https://github.com/solana-labs/solana/releases/download/v${{ env.SOLANA_VERSION }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          rm solana-release-x86_64-unknown-linux-gnu.tar.bz2
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/solana-release/bin" >> $GITHUB_PATH
+
+      - name: Setup Rust (AFTER Solana to override bundled Rust)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.79.0
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -58,19 +76,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)" -- -y
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-        env:
-          SOLANA_INSTALL_INIT_ARGS: "--no-modify-path"
-
-      - name: Verify Solana PATH
-        run: |
-          export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-          solana --version
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Install Anchor CLI
         run: npm install -g @coral-xyz/anchor-cli@${{ env.ANCHOR_VERSION }}
