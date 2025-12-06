@@ -43,7 +43,7 @@ ChronoVault enables programmable scheduled transactions on Solana blockchain wit
 
 - Rust 1.70+
 - Solana CLI 2.0+
-- Anchor CLI 0.30.1+
+- Anchor CLI 0.32.0+
 - Node.js 18+
 
 ### Installation
@@ -191,7 +191,7 @@ For deployment to devnet, add the following secret to your GitHub repository:
 
 - Rust: stable
 - Solana CLI: 2.0.3
-- Anchor CLI: 0.30.1
+- Anchor CLI: 0.32.0
 - Node.js: 20
 
 ---

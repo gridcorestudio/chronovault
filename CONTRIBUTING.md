@@ -39,7 +39,7 @@ Please be respectful and constructive in all interactions. We're building someth
 # Prerequisites
 - Rust 1.70+
 - Solana CLI 2.0+
-- Anchor CLI 0.30.1+
+- Anchor CLI 0.32.0+
 - Node.js 18+
 
 # Setup
