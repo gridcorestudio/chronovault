@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   SOLANA_VERSION: 2.0.3
-  ANCHOR_VERSION: 0.32.0
+  ANCHOR_VERSION: 0.30.1
   NODE_VERSION: 20
 
 jobs:
@@ -24,31 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Rust toolchains
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          source $HOME/.cargo/env
-          rustup toolchain install 1.82.0
-          rustup toolchain install 1.75.0
-          rustup default 1.82.0
-
-      - name: Add Cargo to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev pkg-config
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-          key: ${{ runner.os }}-cargo-rust182-${{ hashFiles('**/Cargo.toml') }}-v1
 
       - name: Cache Solana
         uses: actions/cache@v4
@@ -65,14 +40,15 @@ jobs:
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Install Anchor CLI
+      - name: Install Anchor CLI (prebuilt)
         run: |
-          cargo +1.82.0 install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+          mkdir -p ~/.cargo/bin
+          curl -sSfL "https://github.com/coral-xyz/anchor/releases/download/v${{ env.ANCHOR_VERSION }}/anchor-${{ env.ANCHOR_VERSION }}-x86_64-unknown-linux-gnu" -o ~/.cargo/bin/anchor
+          chmod +x ~/.cargo/bin/anchor
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Verify installations
         run: |
-          rustc --version
-          cargo --version
           solana --version
           anchor --version
 
@@ -88,12 +64,6 @@ jobs:
 
       - name: Install NPM dependencies
         run: npm install
-
-      - name: Generate Cargo.lock v3 format with compatible deps
-        run: |
-          rm -f Cargo.lock
-          cargo +1.75.0 generate-lockfile
-          cargo +1.75.0 update borsh@1.6.0 --precise 1.5.1 || true
 
       - name: Build Anchor program
         run: anchor build --skip-lint

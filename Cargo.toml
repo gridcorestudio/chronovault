@@ -3,7 +3,6 @@ members = [
     "programs/*"
 ]
 resolver = "2"
-rust-version = "1.75"
 
 [profile.release]
 overflow-checks = true
