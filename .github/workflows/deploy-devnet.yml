@@ -11,7 +11,6 @@ on:
 env:
   SOLANA_VERSION: "1.18.17"
   ANCHOR_VERSION: "0.30.1"
-  SOLANA_PATH: "/home/runner/.local/share/solana/install/active_release/bin"
 
 jobs:
   validate:
@@ -68,24 +67,21 @@ jobs:
       - name: Install Solana CLI
         run: |
           sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-          echo "${{ env.SOLANA_PATH }}" >> $GITHUB_PATH
-          ${{ env.SOLANA_PATH }}/solana --version
+          SOLANA_BIN="$HOME/.local/share/solana/install/active_release/bin"
+          echo "PATH=$SOLANA_BIN:$PATH" >> $GITHUB_ENV
+          $SOLANA_BIN/solana --version
 
       - name: Install Anchor CLI
-        run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
-          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+        run: cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
 
       - name: Verify installations
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           solana --version
           anchor --version
           rustc --version
 
       - name: Setup deploy wallet
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           mkdir -p ~/.config/solana
           echo '${{ secrets.DEPLOY_WALLET_KEYPAIR }}' > ~/.config/solana/id.json
           solana config set --url https://api.devnet.solana.com
@@ -98,7 +94,6 @@ jobs:
 
       - name: Check wallet balance
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           BALANCE=$(solana balance | awk '{print $1}')
           echo "Wallet balance: $BALANCE SOL"
           if (( $(echo "$BALANCE < 2" | bc -l) )); then
@@ -109,19 +104,15 @@ jobs:
         run: npm install
 
       - name: Build program
-        run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
-          anchor build --skip-lint
+        run: anchor build --skip-lint
 
       - name: Deploy to Devnet
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           anchor deploy --provider.cluster devnet
           echo "Deployment complete!"
 
       - name: Verify deployment
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           PROGRAM_ID=$(solana address -k target/deploy/chronovault-keypair.json)
           echo "Program deployed at: $PROGRAM_ID"
           solana program show $PROGRAM_ID

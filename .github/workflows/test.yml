@@ -9,7 +9,6 @@ on:
 env:
   SOLANA_VERSION: "1.18.17"
   ANCHOR_VERSION: "0.30.1"
-  SOLANA_PATH: "/home/runner/.local/share/solana/install/active_release/bin"
 
 jobs:
   build:
@@ -48,17 +47,15 @@ jobs:
       - name: Install Solana CLI
         run: |
           sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-          echo "${{ env.SOLANA_PATH }}" >> $GITHUB_PATH
-          ${{ env.SOLANA_PATH }}/solana --version
+          SOLANA_BIN="$HOME/.local/share/solana/install/active_release/bin"
+          echo "PATH=$SOLANA_BIN:$PATH" >> $GITHUB_ENV
+          $SOLANA_BIN/solana --version
 
       - name: Install Anchor CLI
-        run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
-          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+        run: cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
 
       - name: Verify installations
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           solana --version
           anchor --version
           rustc --version
@@ -66,13 +63,11 @@ jobs:
 
       - name: Setup Solana wallet keypair
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           solana-keygen new --no-bip39-passphrase --force
           solana config set --url localhost
 
       - name: Setup program keypair
         run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
           mkdir -p target/deploy
           solana-keygen new --no-bip39-passphrase --force --outfile target/deploy/chronovault-keypair.json
 
@@ -80,6 +75,4 @@ jobs:
         run: npm install
 
       - name: Build Anchor program
-        run: |
-          export PATH="${{ env.SOLANA_PATH }}:$PATH"
-          anchor build --skip-lint
+        run: anchor build --skip-lint
