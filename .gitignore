@@ -36,7 +36,6 @@ Thumbs.db
 # Rust/Solana
 target/
 **/*.rs.bk
-Cargo.lock
 
 # Solana
 test-ledger/
