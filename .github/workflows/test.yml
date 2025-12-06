@@ -8,6 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  SOLANA_VERSION: 2.0.3
+  ANCHOR_VERSION: 0.32.0
   NODE_VERSION: 20
 
 jobs:
@@ -28,22 +30,42 @@ jobs:
         with:
           toolchain: 1.81.0
 
-      - name: Setup Anchor
-        uses: coral-xyz/setup-anchor@v2
-        with:
-          anchor-version: 0.32.0
-          solana-cli-version: 2.0.3
-
       - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-1.81.0-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-1.81.0-
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Solana
+        uses: actions/cache@v4
+        id: cache-solana
+        with:
+          path: ~/.local/share/solana
+          key: solana-${{ env.SOLANA_VERSION }}
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Cache Anchor CLI
+        uses: actions/cache@v4
+        id: cache-anchor
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-${{ env.ANCHOR_VERSION }}-rust-1.81.0
+
+      - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked
 
       - name: Verify installations
         run: |
