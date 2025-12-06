@@ -30,11 +30,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: projectserum/build:v0.26.0
+      options: --user root
     environment: devnet
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Verify installations
         run: |
