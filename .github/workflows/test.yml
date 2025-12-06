@@ -11,6 +11,7 @@ env:
   SOLANA_VERSION: 2.0.3
   ANCHOR_VERSION: 0.32.0
   NODE_VERSION: 20
+  RUST_VERSION: 1.79.0
 
 jobs:
   build:
@@ -26,7 +27,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -35,9 +38,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-cargo-${{ env.RUST_VERSION }}-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-${{ env.RUST_VERSION }}-
 
       - name: Cache Solana
         uses: actions/cache@v4
@@ -73,13 +76,12 @@ jobs:
 
       - name: Verify installations
         run: |
+          rustc --version
           solana --version
           anchor --version
 
-      - name: Regenerate Cargo.lock
-        run: |
-          rm -f Cargo.lock
-          cargo generate-lockfile
+      - name: Remove Cargo.lock if exists
+        run: rm -f Cargo.lock
 
       - name: Setup Solana wallet keypair
         run: |
