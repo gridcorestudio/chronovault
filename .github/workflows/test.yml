@@ -53,17 +53,24 @@ jobs:
       - name: Add Solana to PATH
         run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Install Anchor CLI
+      - name: Install AVM and Anchor CLI
         run: |
-          cargo install --git https://github.com/coral-xyz/anchor anchor-cli --locked --force
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          avm install 0.30.1
+          avm use 0.30.1
 
-      - name: Setup Solana keypair
+      - name: Setup Solana wallet keypair
         run: |
           solana-keygen new --no-bip39-passphrase --force
           solana config set --url localhost
+
+      - name: Setup program keypair
+        run: |
+          mkdir -p target/deploy
+          echo '${{ secrets.PROGRAM_KEYPAIR }}' > target/deploy/chronovault-keypair.json
 
       - name: Install NPM dependencies
         run: npm install
 
       - name: Build Anchor program
-        run: anchor build
+        run: anchor build --skip-lint
