@@ -85,7 +85,7 @@ jobs:
       - name: Setup program keypair
         run: |
           mkdir -p target/deploy
-          echo '${{ secrets.PROGRAM_KEYPAIR }}' > target/deploy/chronovault-keypair.json
+          solana-keygen new --no-bip39-passphrase --force --outfile target/deploy/chronovault-keypair.json
 
       - name: Install NPM dependencies
         run: npm install
