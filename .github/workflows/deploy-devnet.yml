@@ -83,6 +83,11 @@ jobs:
           solana --version
           anchor --version
 
+      - name: Regenerate Cargo.lock
+        run: |
+          rm -f Cargo.lock
+          cargo generate-lockfile
+
       - name: Setup deploy wallet
         run: |
           mkdir -p ~/.config/solana
