@@ -29,7 +29,7 @@ jobs:
     if: github.event.inputs.confirm_deploy == 'deploy'
     runs-on: ubuntu-latest
     container:
-      image: solanafoundation/anchor:0.30.1
+      image: backpackapp/build:v0.30.1
     environment: devnet
     
     steps:
@@ -38,7 +38,8 @@ jobs:
 
       - name: Setup Rust toolchain
         run: |
-          rustup default 1.75.0
+          . /root/.bashrc || true
+          rustup default stable
 
       - name: Verify installations
         run: |
