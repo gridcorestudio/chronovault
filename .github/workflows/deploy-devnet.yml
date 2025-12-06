@@ -43,10 +43,16 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Rust 1.79.0
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.79.0
+      - name: Install Rust toolchains
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup toolchain install 1.82.0
+          rustup toolchain install 1.77.0
+          rustup default 1.82.0
+
+      - name: Add Cargo to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Install system dependencies
         run: |
@@ -60,7 +66,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cargo/bin
-          key: ${{ runner.os }}-cargo-deploy-rust179-${{ hashFiles('**/Cargo.toml') }}-v1
+          key: ${{ runner.os }}-cargo-deploy-rust182-${{ hashFiles('**/Cargo.toml') }}-v1
 
       - name: Cache Solana
         uses: actions/cache@v4
@@ -79,7 +85,7 @@ jobs:
 
       - name: Install Anchor CLI
         run: |
-          cargo install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
+          cargo +1.82.0 install --git https://github.com/coral-xyz/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
 
       - name: Verify installations
         run: |
@@ -107,6 +113,14 @@ jobs:
           if (( $(echo "$BALANCE < 2" | bc -l) )); then
             echo "Warning: Low balance for deployment"
           fi
+
+      - name: Install NPM dependencies
+        run: npm install
+
+      - name: Generate Cargo.lock v3 format
+        run: |
+          rm -f Cargo.lock
+          cargo +1.77.0 generate-lockfile
 
       - name: Build program
         run: anchor build --skip-lint
