@@ -1,0 +1,39 @@
+error: failed to run custom build command for `hidapi v2.6.3`
+Caused by:
+  process didn't exit successfully: `/tmp/cargo-installqLSTSW/release/build/hidapi-93b10adf864a5b40/build-script-build` (exit status: 101)
+  --- stdout
+  cargo:rustc-check-cfg=cfg(hidapi)
+  cargo:rustc-check-cfg=cfg(libusb)
+  cargo:rerun-if-changed=etc/hidapi/linux/hid.c
+  cargo:rerun-if-env-changed=LIBUDEV_NO_PKG_CONFIG
+  cargo:rerun-if-env-changed=PKG_CONFIG_x86_64-unknown-linux-gnu
+  cargo:rerun-if-env-changed=PKG_CONFIG_x86_64_unknown_linux_gnu
+  cargo:rerun-if-env-changed=HOST_PKG_CONFIG
+  cargo:rerun-if-env-changed=PKG_CONFIG
+  cargo:rerun-if-env-changed=LIBUDEV_STATIC
+  cargo:rerun-if-env-changed=LIBUDEV_DYNAMIC
+  cargo:rerun-if-env-changed=PKG_CONFIG_ALL_STATIC
+  cargo:rerun-if-env-changed=PKG_CONFIG_ALL_DYNAMIC
+  cargo:rerun-if-env-changed=PKG_CONFIG_PATH_x86_64-unknown-linux-gnu
+  cargo:rerun-if-env-changed=PKG_CONFIG_PATH_x86_64_unknown_linux_gnu
+  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_PATH
+  cargo:rerun-if-env-changed=PKG_CONFIG_PATH
+  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR_x86_64-unknown-linux-gnu
+  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR_x86_64_unknown_linux_gnu
+  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_LIBDIR
+  cargo:rerun-if-env-changed=PKG_CONFIG_LIBDIR
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_x86_64-unknown-linux-gnu
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR_x86_64_unknown_linux_gnu
+  cargo:rerun-if-env-changed=HOST_PKG_CONFIG_SYSROOT_DIR
+  cargo:rerun-if-env-changed=PKG_CONFIG_SYSROOT_DIR
+  --- stderr
+  thread 'main' (12157) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hidapi-2.6.3/build.rs:61:54:
+  Unable to find libudev: `PKG_CONFIG_ALLOW_SYSTEM_CFLAGS="1" PKG_CONFIG_ALLOW_SYSTEM_LIBS="1" "pkg-config" "--libs" "--cflags" "libudev"` did not exit successfully: exit status: 1
+  error: could not find system library 'libudev' required by the 'hidapi' crate
+  --- stderr
+  Package libudev was not found in the pkg-config search path.
+  Perhaps you should add the directory containing `libudev.pc'
+  to the PKG_CONFIG_PATH environment variable
+  Package 'libudev', required by 'virtual:world', not found
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+warning: build failed, waiting for other jobs to finish...
