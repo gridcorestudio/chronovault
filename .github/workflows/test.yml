@@ -23,25 +23,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Cache Solana CLI
-        id: cache-solana
-        uses: actions/cache@v4
-        with:
-          path: ~/solana-release
-          key: solana-${{ runner.os }}-${{ env.SOLANA_VERSION }}
-
-      - name: Download Solana CLI
-        if: steps.cache-solana.outputs.cache-hit != 'true'
-        run: |
-          cd $HOME
-          wget -q https://github.com/solana-labs/solana/releases/download/v${{ env.SOLANA_VERSION }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2
-          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
-          rm solana-release-x86_64-unknown-linux-gnu.tar.bz2
-
-      - name: Add Solana to PATH
-        run: echo "$HOME/solana-release/bin" >> $GITHUB_PATH
-
-      - name: Setup Rust (AFTER Solana to override bundled Rust)
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.79.0
@@ -57,21 +39,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - name: Download and setup Solana CLI
+        run: |
+          cd $HOME
+          wget -q https://github.com/solana-labs/solana/releases/download/v${{ env.SOLANA_VERSION }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          rm solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          # Remove bundled Rust to use system Rust
+          rm -f $HOME/solana-release/bin/rustc
+          rm -f $HOME/solana-release/bin/rustup
+          rm -f $HOME/solana-release/bin/cargo
+          rm -rf $HOME/solana-release/bin/sdk/sbf/dependencies/platform-tools
+          echo "$HOME/solana-release/bin" >> $GITHUB_PATH
+
       - name: Install Anchor CLI
         run: npm install -g @coral-xyz/anchor-cli@${{ env.ANCHOR_VERSION }}
 
       - name: Verify installations
         run: |
-          echo "Solana:"
+          echo "=== Solana ==="
           which solana
           solana --version
-          echo "Rust:"
+          echo "=== Rust ==="
           which rustc
           rustc --version
-          echo "Anchor:"
+          echo "=== Anchor ==="
           anchor --version
-          echo "Node:"
-          node --version
 
       - name: Setup Solana wallet keypair
         run: |
